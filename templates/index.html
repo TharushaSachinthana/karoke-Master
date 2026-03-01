@@ -1,0 +1,1084 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sinhala Karaoke Maker | සිංහල කැරෝකේ</title>
+    <meta name="description" content="Free Sinhala Karaoke Maker - Create karaoke videos from YouTube links or MP3 files with AI-powered vocal removal and Sinhala lyrics sync.">
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Noto+Sans+Sinhala:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --primary: #7c3aed;
+            --primary-glow: rgba(124, 58, 237, 0.4);
+            --accent: #06b6d4;
+            --accent-glow: rgba(6, 182, 212, 0.3);
+            --success: #10b981;
+            --error: #ef4444;
+            --warning: #f59e0b;
+            --bg-dark: #0a0a1a;
+            --bg-card: rgba(15, 15, 35, 0.8);
+            --bg-card-hover: rgba(25, 25, 55, 0.9);
+            --border: rgba(124, 58, 237, 0.2);
+            --border-hover: rgba(124, 58, 237, 0.5);
+            --text: #e2e8f0;
+            --text-dim: #94a3b8;
+            --text-bright: #ffffff;
+            --glass: rgba(255, 255, 255, 0.05);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', 'Noto Sans Sinhala', sans-serif;
+            background: var(--bg-dark);
+            color: var(--text);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* ─── Animated Background ─── */
+        .bg-animation {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            overflow: hidden;
+            pointer-events: none;
+        }
+
+        .bg-animation .orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(80px);
+            animation: float 20s infinite ease-in-out;
+        }
+
+        .bg-animation .orb:nth-child(1) {
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, var(--primary-glow) 0%, transparent 70%);
+            top: -100px;
+            left: -100px;
+            animation-delay: 0s;
+        }
+
+        .bg-animation .orb:nth-child(2) {
+            width: 500px;
+            height: 500px;
+            background: radial-gradient(circle, var(--accent-glow) 0%, transparent 70%);
+            bottom: -100px;
+            right: -100px;
+            animation-delay: -7s;
+        }
+
+        .bg-animation .orb:nth-child(3) {
+            width: 400px;
+            height: 400px;
+            background: radial-gradient(circle, rgba(236, 72, 153, 0.2) 0%, transparent 70%);
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            animation-delay: -14s;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            25% { transform: translate(50px, -50px) scale(1.1); }
+            50% { transform: translate(-30px, 30px) scale(0.9); }
+            75% { transform: translate(40px, 20px) scale(1.05); }
+        }
+
+        /* ─── Main Container ─── */
+        .container {
+            position: relative;
+            z-index: 1;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        /* ─── Header ─── */
+        .header {
+            text-align: center;
+            margin-bottom: 50px;
+        }
+
+        .header .logo {
+            display: inline-flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+
+        .header .logo-icon {
+            width: 64px;
+            height: 64px;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            border-radius: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            box-shadow: 0 8px 32px var(--primary-glow);
+            animation: pulse-glow 3s infinite ease-in-out;
+        }
+
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 8px 32px var(--primary-glow); }
+            50% { box-shadow: 0 8px 48px var(--primary-glow), 0 0 80px var(--accent-glow); }
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #fff 0%, var(--accent) 50%, var(--primary) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: -0.5px;
+        }
+
+        .header .sinhala-title {
+            font-family: 'Noto Sans Sinhala', sans-serif;
+            font-size: 1.3rem;
+            color: var(--text-dim);
+            margin-top: 4px;
+            font-weight: 400;
+        }
+
+        .header .subtitle {
+            color: var(--text-dim);
+            font-size: 1rem;
+            margin-top: 12px;
+            font-weight: 300;
+        }
+
+        .header .subtitle span {
+            color: var(--success);
+            font-weight: 600;
+        }
+
+        /* ─── Card ─── */
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 36px;
+            backdrop-filter: blur(20px);
+            margin-bottom: 24px;
+            transition: all 0.3s ease;
+        }
+
+        .card:hover {
+            border-color: var(--border-hover);
+            background: var(--bg-card-hover);
+        }
+
+        .card-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text-bright);
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .card-title .badge {
+            font-size: 0.7rem;
+            padding: 3px 10px;
+            border-radius: 20px;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            color: white;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* ─── Tabs ─── */
+        .tabs {
+            display: flex;
+            gap: 4px;
+            background: var(--glass);
+            border-radius: 14px;
+            padding: 4px;
+            margin-bottom: 24px;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 11px;
+            background: transparent;
+            color: var(--text-dim);
+            font-family: inherit;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .tab:hover {
+            color: var(--text);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .tab.active {
+            background: linear-gradient(135deg, var(--primary), rgba(124, 58, 237, 0.8));
+            color: white;
+            box-shadow: 0 4px 16px var(--primary-glow);
+        }
+
+        /* ─── Input Panels ─── */
+        .input-panel {
+            display: none;
+        }
+
+        .input-panel.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ─── Input Field ─── */
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        .input-group label {
+            display: block;
+            font-size: 0.85rem;
+            color: var(--text-dim);
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+
+        .text-input {
+            width: 100%;
+            padding: 14px 18px;
+            background: var(--glass);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            color: var(--text-bright);
+            font-family: inherit;
+            font-size: 1rem;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        .text-input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px var(--primary-glow);
+        }
+
+        .text-input::placeholder {
+            color: rgba(148, 163, 184, 0.5);
+        }
+
+        /* ─── File Upload ─── */
+        .file-upload {
+            border: 2px dashed var(--border);
+            border-radius: 16px;
+            padding: 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .file-upload:hover {
+            border-color: var(--primary);
+            background: rgba(124, 58, 237, 0.05);
+        }
+
+        .file-upload.dragover {
+            border-color: var(--accent);
+            background: rgba(6, 182, 212, 0.1);
+            transform: scale(1.01);
+        }
+
+        .file-upload input {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        .file-upload .upload-icon {
+            font-size: 48px;
+            margin-bottom: 12px;
+        }
+
+        .file-upload .upload-text {
+            font-size: 1rem;
+            color: var(--text-dim);
+        }
+
+        .file-upload .upload-text strong {
+            color: var(--primary);
+        }
+
+        .file-upload .upload-formats {
+            font-size: 0.8rem;
+            color: rgba(148, 163, 184, 0.6);
+            margin-top: 8px;
+        }
+
+        .file-name {
+            display: none;
+            margin-top: 12px;
+            padding: 10px 16px;
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            border-radius: 10px;
+            color: var(--success);
+            font-size: 0.9rem;
+        }
+
+        /* ─── Settings ─── */
+        .settings-row {
+            display: flex;
+            gap: 16px;
+            align-items: end;
+        }
+
+        .settings-row .input-group {
+            flex: 1;
+        }
+
+        select {
+            width: 100%;
+            padding: 12px 16px;
+            background: var(--glass);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            color: var(--text-bright);
+            font-family: inherit;
+            font-size: 0.9rem;
+            outline: none;
+            cursor: pointer;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2394a3b8' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 14px center;
+        }
+
+        select option {
+            background: #1a1a35;
+            color: var(--text);
+        }
+
+        /* ─── Button ─── */
+        .btn-primary {
+            width: 100%;
+            padding: 16px 32px;
+            background: linear-gradient(135deg, var(--primary), #9333ea);
+            border: none;
+            border-radius: 14px;
+            color: white;
+            font-family: inherit;
+            font-size: 1.1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            margin-top: 8px;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 32px var(--primary-glow);
+        }
+
+        .btn-primary:active:not(:disabled) {
+            transform: translateY(0);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-primary .shimmer {
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+            animation: shimmer 3s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { left: -100%; }
+            100% { left: 100%; }
+        }
+
+        /* ─── Progress Section ─── */
+        .progress-section {
+            display: none;
+        }
+
+        .progress-section.active {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+
+        .progress-bar-container {
+            background: var(--glass);
+            border-radius: 12px;
+            overflow: hidden;
+            height: 8px;
+            margin-bottom: 20px;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary), var(--accent));
+            border-radius: 12px;
+            transition: width 0.5s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .progress-bar::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            animation: shimmer 1.5s infinite;
+        }
+
+        .progress-steps {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .progress-step {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 14px 18px;
+            border-radius: 12px;
+            background: var(--glass);
+            transition: all 0.3s ease;
+            font-size: 0.95rem;
+        }
+
+        .progress-step.active {
+            background: rgba(124, 58, 237, 0.15);
+            border: 1px solid rgba(124, 58, 237, 0.3);
+        }
+
+        .progress-step.done {
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+        }
+
+        .progress-step .step-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            flex-shrink: 0;
+            background: var(--glass);
+        }
+
+        .progress-step.active .step-icon {
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            animation: pulse-glow 2s infinite ease-in-out;
+        }
+
+        .progress-step.done .step-icon {
+            background: var(--success);
+        }
+
+        .progress-step .step-text {
+            color: var(--text-dim);
+        }
+
+        .progress-step.active .step-text {
+            color: var(--text-bright);
+            font-weight: 500;
+        }
+
+        .progress-step.done .step-text {
+            color: var(--success);
+        }
+
+        .elapsed-time {
+            text-align: center;
+            color: var(--text-dim);
+            font-size: 0.85rem;
+            margin-top: 16px;
+        }
+
+        /* ─── Result Section ─── */
+        .result-section {
+            display: none;
+        }
+
+        .result-section.active {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+
+        .result-success {
+            text-align: center;
+            padding: 24px;
+        }
+
+        .result-success .success-icon {
+            font-size: 64px;
+            margin-bottom: 16px;
+            animation: bounce 0.6s ease;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
+        }
+
+        .result-success h2 {
+            font-size: 1.5rem;
+            color: var(--text-bright);
+            margin-bottom: 8px;
+        }
+
+        .result-success p {
+            color: var(--text-dim);
+            margin-bottom: 24px;
+        }
+
+        .download-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .btn-download {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 14px 24px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            background: var(--glass);
+            color: var(--text-bright);
+            font-family: inherit;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+        }
+
+        .btn-download:hover {
+            background: rgba(124, 58, 237, 0.2);
+            border-color: var(--primary);
+            transform: translateY(-2px);
+        }
+
+        .btn-download.primary {
+            background: linear-gradient(135deg, var(--primary), #9333ea);
+            border: none;
+            font-weight: 700;
+        }
+
+        .btn-download.primary:hover {
+            box-shadow: 0 8px 32px var(--primary-glow);
+        }
+
+        .btn-new {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 20px;
+            padding: 10px 20px;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            background: transparent;
+            color: var(--text-dim);
+            font-family: inherit;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-new:hover {
+            color: var(--text-bright);
+            border-color: var(--text-dim);
+        }
+
+        /* ─── Error ─── */
+        .error-message {
+            display: none;
+            padding: 16px 20px;
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            border-radius: 12px;
+            color: var(--error);
+            margin-top: 16px;
+            font-size: 0.9rem;
+        }
+
+        .error-message.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        /* ─── Footer ─── */
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            padding: 20px;
+            color: var(--text-dim);
+            font-size: 0.8rem;
+        }
+
+        .footer a {
+            color: var(--primary);
+            text-decoration: none;
+        }
+
+        /* ─── Spinner ─── */
+        .spinner {
+            display: inline-block;
+            width: 18px;
+            height: 18px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* ─── Responsive ─── */
+        @media (max-width: 640px) {
+            .container { padding: 20px 16px; }
+            .header h1 { font-size: 1.8rem; }
+            .card { padding: 24px; }
+            .settings-row { flex-direction: column; gap: 0; }
+            .tabs { flex-direction: column; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Animated Background -->
+    <div class="bg-animation">
+        <div class="orb"></div>
+        <div class="orb"></div>
+        <div class="orb"></div>
+    </div>
+
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="logo">
+                <div class="logo-icon">🎤</div>
+            </div>
+            <h1>Karaoke Maker</h1>
+            <div class="sinhala-title">සිංහල කැරෝකේ නිර්මාණය</div>
+            <p class="subtitle">AI-powered karaoke creator · <span>100% Free</span></p>
+        </header>
+
+        <!-- Input Section -->
+        <div id="inputSection">
+            <div class="card">
+                <div class="card-title">
+                    🎵 Choose Your Song
+                    <span class="badge">Step 1</span>
+                </div>
+
+                <!-- Tabs -->
+                <div class="tabs">
+                    <button class="tab active" id="tabYoutube" onclick="switchTab('youtube')">
+                        ▶️ YouTube URL
+                    </button>
+                    <button class="tab" id="tabUpload" onclick="switchTab('upload')">
+                        📁 Upload File
+                    </button>
+                </div>
+
+                <!-- YouTube Panel -->
+                <div class="input-panel active" id="panelYoutube">
+                    <div class="input-group">
+                        <label>YouTube Video URL</label>
+                        <input type="text" class="text-input" id="youtubeUrl" 
+                               placeholder="https://www.youtube.com/watch?v=..."
+                               autocomplete="off">
+                    </div>
+                </div>
+
+                <!-- Upload Panel -->
+                <div class="input-panel" id="panelUpload">
+                    <div class="file-upload" id="fileUploadZone">
+                        <input type="file" id="audioFile" accept=".mp3,.wav,.m4a,.flac,.ogg,.aac,.wma">
+                        <div class="upload-icon">📂</div>
+                        <div class="upload-text">
+                            Drag & drop or <strong>click to browse</strong>
+                        </div>
+                        <div class="upload-formats">MP3, WAV, M4A, FLAC, OGG, AAC</div>
+                    </div>
+                    <div class="file-name" id="fileName"></div>
+                </div>
+            </div>
+
+            <!-- Settings -->
+            <div class="card">
+                <div class="card-title">
+                    ⚙️ Settings
+                    <span class="badge">Optional</span>
+                </div>
+                <div class="settings-row">
+                    <div class="input-group">
+                        <label>Whisper Model (Accuracy vs Speed)</label>
+                        <select id="whisperModel">
+                            <option value="tiny">Tiny — Fastest, less accurate</option>
+                            <option value="base" selected>Base — Good balance (Recommended)</option>
+                            <option value="small">Small — More accurate, slower</option>
+                            <option value="medium">Medium — High accuracy, slow</option>
+                            <option value="large">Large — Best accuracy, very slow</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Create Button -->
+            <button class="btn-primary" id="btnCreate" onclick="startKaraoke()">
+                <span class="shimmer"></span>
+                🎬 Create Karaoke Video
+            </button>
+
+            <div class="error-message" id="errorMessage"></div>
+        </div>
+
+        <!-- Progress Section -->
+        <div class="progress-section" id="progressSection">
+            <div class="card">
+                <div class="card-title">
+                    🎬 Creating Your Karaoke
+                </div>
+                
+                <div class="progress-bar-container">
+                    <div class="progress-bar" id="progressBar" style="width: 0%"></div>
+                </div>
+
+                <div class="progress-steps">
+                    <div class="progress-step" id="step1">
+                        <div class="step-icon">📥</div>
+                        <div class="step-text">Downloading / processing audio</div>
+                    </div>
+                    <div class="progress-step" id="step2">
+                        <div class="step-icon">🎼</div>
+                        <div class="step-text">Separating vocals with AI (Demucs)</div>
+                    </div>
+                    <div class="progress-step" id="step3">
+                        <div class="step-icon">📝</div>
+                        <div class="step-text">Transcribing Sinhala lyrics (Whisper)</div>
+                    </div>
+                    <div class="progress-step" id="step4">
+                        <div class="step-icon">⏱️</div>
+                        <div class="step-text">Generating synced subtitles</div>
+                    </div>
+                    <div class="progress-step" id="step5">
+                        <div class="step-icon">🎬</div>
+                        <div class="step-text">Rendering karaoke video</div>
+                    </div>
+                </div>
+
+                <div class="elapsed-time" id="elapsedTime">Elapsed: 0s</div>
+            </div>
+        </div>
+
+        <!-- Result Section -->
+        <div class="result-section" id="resultSection">
+            <div class="card">
+                <div class="result-success">
+                    <div class="success-icon">🎉</div>
+                    <h2>Karaoke Ready!</h2>
+                    <p>Your Sinhala karaoke video has been created successfully</p>
+                    
+                    <div class="download-buttons">
+                        <a class="btn-download primary" id="downloadVideo" href="#">
+                            ⬇️ Download Karaoke Video (MP4)
+                        </a>
+                        <a class="btn-download" id="downloadInstrumental" href="#">
+                            🎵 Download Instrumental (WAV)
+                        </a>
+                        <a class="btn-download" id="downloadLyrics" href="#">
+                            📝 Download Lyrics (LRC)
+                        </a>
+                    </div>
+
+                    <button class="btn-new" onclick="resetApp()">
+                        ➕ Create Another Karaoke
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>Built with ❤️ for Sinhala music lovers</p>
+            <p style="margin-top: 4px">
+                Powered by <a href="https://github.com/facebookresearch/demucs" target="_blank">Demucs</a> · 
+                <a href="https://github.com/openai/whisper" target="_blank">Whisper</a> · 
+                <a href="https://ffmpeg.org" target="_blank">FFmpeg</a>
+            </p>
+        </footer>
+    </div>
+
+    <script>
+        let currentJobId = null;
+        let pollInterval = null;
+
+        // ─── Tab Switching ───
+        function switchTab(tab) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.input-panel').forEach(p => p.classList.remove('active'));
+            
+            if (tab === 'youtube') {
+                document.getElementById('tabYoutube').classList.add('active');
+                document.getElementById('panelYoutube').classList.add('active');
+            } else {
+                document.getElementById('tabUpload').classList.add('active');
+                document.getElementById('panelUpload').classList.add('active');
+            }
+        }
+
+        // ─── File Upload Handling ───
+        const fileInput = document.getElementById('audioFile');
+        const uploadZone = document.getElementById('fileUploadZone');
+
+        fileInput.addEventListener('change', function() {
+            if (this.files.length) {
+                const fileName = document.getElementById('fileName');
+                fileName.textContent = '✅ Selected: ' + this.files[0].name;
+                fileName.style.display = 'block';
+            }
+        });
+
+        uploadZone.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            this.classList.add('dragover');
+        });
+
+        uploadZone.addEventListener('dragleave', function() {
+            this.classList.remove('dragover');
+        });
+
+        uploadZone.addEventListener('drop', function(e) {
+            e.preventDefault();
+            this.classList.remove('dragover');
+            if (e.dataTransfer.files.length) {
+                fileInput.files = e.dataTransfer.files;
+                const fileName = document.getElementById('fileName');
+                fileName.textContent = '✅ Selected: ' + e.dataTransfer.files[0].name;
+                fileName.style.display = 'block';
+            }
+        });
+
+        // ─── Start Karaoke Generation ───
+        async function startKaraoke() {
+            const btn = document.getElementById('btnCreate');
+            const errorMsg = document.getElementById('errorMessage');
+            errorMsg.classList.remove('active');
+
+            const formData = new FormData();
+            formData.append('whisper_model', document.getElementById('whisperModel').value);
+
+            // Check which tab is active
+            const youtubeTab = document.getElementById('tabYoutube').classList.contains('active');
+            
+            if (youtubeTab) {
+                const url = document.getElementById('youtubeUrl').value.trim();
+                if (!url) {
+                    showError('Please enter a YouTube URL');
+                    return;
+                }
+                if (!url.includes('youtube.com') && !url.includes('youtu.be')) {
+                    showError('Please enter a valid YouTube URL');
+                    return;
+                }
+                formData.append('youtube_url', url);
+            } else {
+                const file = document.getElementById('audioFile').files[0];
+                if (!file) {
+                    showError('Please select an audio file');
+                    return;
+                }
+                formData.append('audio_file', file);
+            }
+
+            // Disable button
+            btn.disabled = true;
+            btn.innerHTML = '<div class="spinner"></div> Starting...';
+
+            try {
+                const response = await fetch('/api/create', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (data.error) {
+                    showError(data.error);
+                    btn.disabled = false;
+                    btn.innerHTML = '<span class="shimmer"></span>🎬 Create Karaoke Video';
+                    return;
+                }
+
+                currentJobId = data.job_id;
+                showProgress();
+                startPolling();
+
+            } catch (err) {
+                showError('Failed to start. Is the server running?');
+                btn.disabled = false;
+                btn.innerHTML = '<span class="shimmer"></span>🎬 Create Karaoke Video';
+            }
+        }
+
+        // ─── Progress Polling ───
+        function startPolling() {
+            pollInterval = setInterval(async () => {
+                try {
+                    const response = await fetch(`/api/status/${currentJobId}`);
+                    const data = await response.json();
+
+                    updateProgress(data);
+
+                    if (data.status === 'complete') {
+                        clearInterval(pollInterval);
+                        showResult();
+                    } else if (data.status === 'error') {
+                        clearInterval(pollInterval);
+                        showError(data.error || 'An error occurred');
+                        document.getElementById('progressSection').classList.remove('active');
+                        document.getElementById('inputSection').style.display = '';
+                        const btn = document.getElementById('btnCreate');
+                        btn.disabled = false;
+                        btn.innerHTML = '<span class="shimmer"></span>🎬 Create Karaoke Video';
+                    }
+                } catch (err) {
+                    console.error('Polling error:', err);
+                }
+            }, 1500);
+        }
+
+        function updateProgress(data) {
+            // Update progress bar
+            document.getElementById('progressBar').style.width = data.progress + '%';
+
+            // Update steps
+            for (let i = 1; i <= 5; i++) {
+                const step = document.getElementById('step' + i);
+                step.classList.remove('active', 'done');
+                
+                if (i < data.current_step) {
+                    step.classList.add('done');
+                    step.querySelector('.step-icon').textContent = '✅';
+                } else if (i === data.current_step) {
+                    step.classList.add('active');
+                }
+            }
+
+            // Update elapsed time
+            const mins = Math.floor(data.elapsed_seconds / 60);
+            const secs = Math.round(data.elapsed_seconds % 60);
+            document.getElementById('elapsedTime').textContent = 
+                `Elapsed: ${mins > 0 ? mins + 'm ' : ''}${secs}s`;
+        }
+
+        // ─── UI State Management ───
+        function showProgress() {
+            document.getElementById('inputSection').style.display = 'none';
+            document.getElementById('progressSection').classList.add('active');
+            document.getElementById('resultSection').classList.remove('active');
+        }
+
+        function showResult() {
+            document.getElementById('progressSection').classList.remove('active');
+            document.getElementById('resultSection').classList.add('active');
+
+            // Set download links
+            document.getElementById('downloadVideo').href = `/api/download/${currentJobId}/video`;
+            document.getElementById('downloadInstrumental').href = `/api/download/${currentJobId}/instrumental`;
+            document.getElementById('downloadLyrics').href = `/api/download/${currentJobId}/lyrics`;
+        }
+
+        function showError(msg) {
+            const errorMsg = document.getElementById('errorMessage');
+            errorMsg.textContent = '❌ ' + msg;
+            errorMsg.classList.add('active');
+        }
+
+        function resetApp() {
+            currentJobId = null;
+            if (pollInterval) clearInterval(pollInterval);
+
+            document.getElementById('inputSection').style.display = '';
+            document.getElementById('progressSection').classList.remove('active');
+            document.getElementById('resultSection').classList.remove('active');
+            document.getElementById('errorMessage').classList.remove('active');
+            
+            const btn = document.getElementById('btnCreate');
+            btn.disabled = false;
+            btn.innerHTML = '<span class="shimmer"></span>🎬 Create Karaoke Video';
+
+            document.getElementById('youtubeUrl').value = '';
+            document.getElementById('audioFile').value = '';
+            document.getElementById('fileName').style.display = 'none';
+            document.getElementById('progressBar').style.width = '0%';
+
+            for (let i = 1; i <= 5; i++) {
+                const step = document.getElementById('step' + i);
+                step.classList.remove('active', 'done');
+                const icons = ['📥', '🎼', '📝', '⏱️', '🎬'];
+                step.querySelector('.step-icon').textContent = icons[i-1];
+            }
+        }
+
+        // ─── Enter key support ───
+        document.getElementById('youtubeUrl').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') startKaraoke();
+        });
+    </script>
+</body>
+</html>

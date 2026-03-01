@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+env/
+venv/
+ENV/
+
+# Flask
+instance/
+.webassets-cache
+.env
+
+# Project specific
+uploads/*
+!uploads/.gitkeep
+output/*
+!output/.gitkeep
+temp/
+*.mp3
+*.mp4
+*.wav
+*.srt
+*.ass
+
+# IDEs
+.vscode/
+.idea/
